@@ -180,6 +180,11 @@ class SmsLength
                 $this->size++;
             } elseif (in_array($char, self::GSM0338_EXTENDED, true)) {
                 $this->size += 2;
+
+                // Prevent splitting of the escaped (extended) character at the end of the message part by adding a fill
+                if ($this->size % self::MAXIMUM_CHARACTERS_7BIT_CONCATENATED === 1) {
+                    $this->size++;
+                }
             } else {
                 $this->encoding = 'ucs-2';
                 break;
@@ -193,7 +198,13 @@ class SmsLength
             for ($i = 0; $i < $mbLength; $i++) {
                 $char = mb_substr($messageContent, $i, 1, 'UTF-8');
                 $utf16Hex = bin2hex(mb_convert_encoding($char, 'UTF-16', 'UTF-8'));
-                $this->size += strlen($utf16Hex) / 4;
+                $charSize = strlen($utf16Hex) / 4;
+                $this->size += $charSize;
+
+                // Prevent splitting of the UTF-16 character at the end of the message part by adding a fill
+                if ($charSize > 1 && $this->size % self::MAXIMUM_CHARACTERS_UCS2_CONCATENATED === 1) {
+                    $this->size++;
+                }
             }
         }
 
@@ -243,6 +254,11 @@ class SmsLength
                 $size++;
             } else {
                 $size += 2;
+
+                // Prevent splitting of the escaped (extended) character at the end of the message part by adding a fill
+                if ($size % self::MAXIMUM_CHARACTERS_7BIT_CONCATENATED === 1) {
+                    $size++;
+                }
             }
 
             // Init next part
@@ -268,6 +284,11 @@ class SmsLength
             $utf16Hex = bin2hex(mb_convert_encoding($char, 'UTF-16', 'UTF-8'));
             $charSize = strlen($utf16Hex) / 4;
             $size += $charSize;
+
+            // Prevent splitting of the doubled character at the end of the message part by adding a fill
+            if ($charSize > 1 && $size % self::MAXIMUM_CHARACTERS_UCS2_CONCATENATED === 1) {
+                $size++;
+            }
 
             // Init next part
             if ($actualPart * self::MAXIMUM_CHARACTERS_UCS2_CONCATENATED < $size) {
