@@ -173,6 +173,7 @@ class SmsLength
         // Any character outside the 7-bit alphabet switches the entire encoding to UCS-2
         $this->encoding = '7-bit';
         $this->size = 0;
+        $padding = 0;
         $mbLength = mb_strlen($messageContent, 'UTF-8');
         for ($i = 0; $i < $mbLength; $i++) {
             $char = mb_substr($messageContent, $i, 1, 'UTF-8');
@@ -182,8 +183,8 @@ class SmsLength
                 $this->size += 2;
 
                 // Prevent splitting of the escaped (extended) character at the end of the message part by adding a fill
-                if ($this->size % self::MAXIMUM_CHARACTERS_7BIT_CONCATENATED === 1) {
-                    $this->size++;
+                if (($this->size + $padding) % self::MAXIMUM_CHARACTERS_7BIT_CONCATENATED === 1) {
+                    $padding++;
                 }
             } else {
                 $this->encoding = 'ucs-2';
@@ -195,6 +196,7 @@ class SmsLength
             // For UCS-2 need to iterate the characters again
             // Those with two UTF-16 code points consume two characters in the SMS
             $this->size = 0;
+            $padding = 0;
             for ($i = 0; $i < $mbLength; $i++) {
                 $char = mb_substr($messageContent, $i, 1, 'UTF-8');
                 $utf16Hex = bin2hex(mb_convert_encoding($char, 'UTF-16', 'UTF-8'));
@@ -202,8 +204,8 @@ class SmsLength
                 $this->size += $charSize;
 
                 // Prevent splitting of the UTF-16 character at the end of the message part by adding a fill
-                if ($charSize > 1 && $this->size % self::MAXIMUM_CHARACTERS_UCS2_CONCATENATED === 1) {
-                    $this->size++;
+                if ($charSize > 1 && ($this->size + $padding) % self::MAXIMUM_CHARACTERS_UCS2_CONCATENATED === 1) {
+                    $padding++;
                 }
             }
         }
@@ -218,6 +220,7 @@ class SmsLength
 
         $this->messageCount = 1;
         if ($this->size > $singleSize) {
+            $this->size += $padding; // Add padding only if message has more than one part
             $this->messageCount = (int)ceil($this->size / $concatSize);
         }
     }
