@@ -144,6 +144,56 @@ class SmsLengthTest extends TestCase
     }
 
     /**
+     * Characters from extension table (7bit) or doubled character (ucs2) can not been split to two parts of message.
+     * To prevent this is character moved to next part of message, so first part has one character less.
+     *
+     * @dataProvider providerPreventSplitDoubleCharacter
+     */
+    public function testPreventSplitDoubleCharacter(array $parts, int $firstMessageLength): void
+    {
+        $message = implode('', $parts);
+        $characters = mb_strlen($message, 'UTF-8');
+        $messageCount = count($parts);
+        $size = new SmsLength($message);
+
+        $firstMessagePart = $size->getMessageParts()[1];
+
+        self::assertSame($messageCount, $size->getMessageCount());
+        self::assertSame($parts, $size->getMessageParts());
+        // original message length + escape (or doubled) character + padding at end of the first part
+        self::assertSame($characters + 2, $size->getSize());
+        self::assertSame($firstMessageLength, mb_strlen($firstMessagePart, 'UTF-8'));
+    }
+
+    public function providerPreventSplitDoubleCharacter(): array
+    {
+        return [
+            '7bit' => [
+                [
+                    // 153 - 1 padding = 152
+                    1 => $this->getChars(self::GSM0338_BASIC, 152),
+                    // 2 (escaped char) + 151 = 153
+                    2 => $this->getChars(self::GSM0338_EXTENDED, 1) . $this->getChars(self::GSM0338_BASIC, 151),
+                    // check if 3. part of message is created
+                    3 => $this->getChars(self::GSM0338_BASIC, 1)
+                ],
+                152 // Escaped character is moved to next part, so first part has 153 - 1 padding = 152 chars
+            ],
+            'ucs2' => [
+                [
+                    // 67 - 1 padding = 66
+                    1 => $this->getChars(self::GSM0338_BASIC, 66),
+                    // 2 (doubled char) + 65 = 67
+                    2 => "\xf0\x9f\x93\xb1" . $this->getChars(self::GSM0338_BASIC, 65),
+                    // check, if 3. part of message is created
+                    3 => $this->getChars(self::GSM0338_BASIC, 1)
+                ],
+                66 // Doubled character is moved to next part, so first part of message has 67 - 1 padding = 66 chars
+            ]
+        ];
+    }
+
+    /**
      * @dataProvider providerTooLarge
      * @medium Expect tests to take >1 but <10
      */
