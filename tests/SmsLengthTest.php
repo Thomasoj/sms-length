@@ -78,8 +78,8 @@ class SmsLengthTest extends TestCase
             'long-gsm-exact' => [str_repeat('exact max', 153), '7-bit', 1377, 9, 1377],
 
             // long 7-bit extended
-            'long-gsm-ex-1' => [str_repeat(self::GSM0338_EXTENDED, 40), '7-bit', 720, 5, 765],
-            'long-gsm-ex-2' => [str_repeat(self::GSM0338_EXTENDED, 76), '7-bit', 1368, 9, 1377],
+            'long-gsm-ex-1' => [str_repeat(self::GSM0338_EXTENDED, 40), '7-bit', 724, 5, 765],
+            'long-gsm-ex-2' => [str_repeat(self::GSM0338_EXTENDED, 76), '7-bit', 1376, 9, 1377],
 
             // long UCS-2
             'long-ucs-1' => [str_repeat('simple msg plus •', 20), 'ucs-2', 340, 6, 402],
@@ -226,13 +226,13 @@ class SmsLengthTest extends TestCase
             // long 7-bit, 10 * 3902 = 39020
             'basic' => [str_repeat('simple msg', 3902), '7-bit', 39020, 256, 39168],
 
-            // long 7-bit extended, 18 * 2168 = 39024
-            'extended' => [str_repeat(self::GSM0338_EXTENDED, 2168), '7-bit', 39024, 256, 39168],
+            // long 7-bit extended, 18 * 2154 + 255 paddings = 39027
+            'extended' => [str_repeat(self::GSM0338_EXTENDED, 2154), '7-bit', 39027, 256, 39168],
 
             // long UCS-2 single, 17 * 1006 = 17102
-            // long UCS-2 double, 18 * 950 = 17100
+            // long UCS-2 double, 18 * 950 + 35 paddings = 17100
             'ucs-1' => [str_repeat('simple msg plus •', 1006), 'ucs-2', 17102, 256, 17152],
-            'ucs-2' => [str_repeat("simple msg plus \xf0\x9f\x93\xb1", 950), 'ucs-2', 17100, 256, 17152],
+            'ucs-2' => [str_repeat("simple msg plus \xf0\x9f\x93\xb1", 950), 'ucs-2', 17135, 256, 17152],
         ];
     }
 
